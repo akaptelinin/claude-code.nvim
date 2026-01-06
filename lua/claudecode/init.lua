@@ -649,14 +649,20 @@ function M._create_commands()
     local current_ft = (vim.bo and vim.bo.filetype) or ""
     local current_bufname = (vim.api and vim.api.nvim_buf_get_name and vim.api.nvim_buf_get_name(0)) or ""
 
+    logger.debug("command", "ClaudeCodeSend: filetype=" .. current_ft .. ", bufname=" .. current_bufname)
+
     local is_tree_buffer = current_ft == "NvimTree"
       or current_ft == "neo-tree"
+      or current_ft == "neo-tree-popup"
       or current_ft == "oil"
       or current_ft == "minifiles"
       or current_ft == "netrw"
+      or current_ft == "snacks_picker_list"
+      or current_ft == "snacks_picker"
       or string.match(current_bufname, "neo%-tree")
       or string.match(current_bufname, "NvimTree")
       or string.match(current_bufname, "minifiles://")
+      or string.match(current_ft, "^snacks_")
 
     if is_tree_buffer then
       local integrations = require("claudecode.integrations")
@@ -693,6 +699,32 @@ function M._create_commands()
             vim.api.nvim_feedkeys(esc, "i", true)
           end
         end)
+      else
+        -- No selection found, fall back to adding current file (like ClaudeCodeAdd %)
+        local file_path = vim.fn.expand("%:p")
+        if file_path and file_path ~= "" then
+          local success, error_msg = M.send_at_mention(file_path, nil, nil, "ClaudeCodeSend")
+          if success then
+            logger.debug("command", "ClaudeCodeSend: Added current file " .. file_path)
+          else
+            logger.error("command", "ClaudeCodeSend: " .. (error_msg or "Failed to add file"))
+          end
+        else
+          -- No file path - might be a tree buffer that wasn't detected, try tree integration
+          local integrations_ok, integrations = pcall(require, "claudecode.integrations")
+          if integrations_ok then
+            local files, tree_error = integrations.get_selected_files_from_tree()
+            if files and #files > 0 then
+              add_paths_to_claude(files, { context = "ClaudeCodeSend->TreeAdd(fallback)" })
+            elseif tree_error then
+              logger.warn("command", "ClaudeCodeSend: " .. tree_error)
+            else
+              logger.warn("command", "ClaudeCodeSend: No selection and no file in current buffer")
+            end
+          else
+            logger.warn("command", "ClaudeCodeSend: No selection and no file in current buffer")
+          end
+        end
       end
     else
       logger.error("command", "ClaudeCodeSend: Failed to load selection module.")
@@ -706,12 +738,16 @@ function M._create_commands()
 
     local is_tree_buffer = current_ft == "NvimTree"
       or current_ft == "neo-tree"
+      or current_ft == "neo-tree-popup"
       or current_ft == "oil"
       or current_ft == "minifiles"
       or current_ft == "netrw"
+      or current_ft == "snacks_picker_list"
+      or current_ft == "snacks_picker"
       or string.match(current_bufname, "neo%-tree")
       or string.match(current_bufname, "NvimTree")
       or string.match(current_bufname, "minifiles://")
+      or string.match(current_ft, "^snacks_")
 
     if is_tree_buffer then
       local integrations = require("claudecode.integrations")

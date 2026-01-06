@@ -20,6 +20,8 @@ function M.get_selected_files_from_tree()
     return M._get_mini_files_selection()
   elseif current_ft == "netrw" then
     return M._get_netrw_selection()
+  elseif current_ft:match("^snacks_picker") then
+    return M._get_snacks_picker_selection()
   else
     return nil, "Not in a supported tree buffer (current filetype: " .. current_ft .. ")"
   end
@@ -475,6 +477,76 @@ function M._get_netrw_selection()
   end
 
   return {}, "Invalid file or directory path: " .. path_result
+end
+
+---Get selected files from snacks.nvim picker
+---@return table files List of file paths
+---@return string|nil error Error message if operation failed
+function M._get_snacks_picker_selection()
+  local success, snacks = pcall(require, "snacks")
+  if not success then
+    return {}, "snacks.nvim not available"
+  end
+
+  -- Try to get the picker instance
+  local picker = snacks.picker and snacks.picker.get and snacks.picker.get()
+  if not picker then
+    -- Fallback: try to get the current item from the picker list buffer
+    local line = vim.api.nvim_get_current_line()
+    if line and line ~= "" then
+      -- The picker list often shows file paths - try to extract it
+      -- Look for absolute path pattern
+      local path = line:match("(/[^%s]+)")
+      if path and (vim.fn.filereadable(path) == 1 or vim.fn.isdirectory(path) == 1) then
+        return { path }, nil
+      end
+
+      -- Try relative path from cwd
+      local cwd = vim.fn.getcwd()
+      local full_path = cwd .. "/" .. line:gsub("^%s+", ""):gsub("%s+$", "")
+      if vim.fn.filereadable(full_path) == 1 or vim.fn.isdirectory(full_path) == 1 then
+        return { full_path }, nil
+      end
+    end
+    return {}, "Could not get selection from snacks picker"
+  end
+
+  -- Try to get current item from picker
+  local item = picker.current and picker:current()
+  if item then
+    local file_path = item.file or item.path or item.filename
+    if file_path then
+      -- Make absolute if relative
+      if not file_path:match("^/") then
+        file_path = vim.fn.getcwd() .. "/" .. file_path
+      end
+      if vim.fn.filereadable(file_path) == 1 or vim.fn.isdirectory(file_path) == 1 then
+        return { file_path }, nil
+      end
+    end
+  end
+
+  -- Try selected items for multi-select
+  local selected = picker.selected and picker:selected()
+  if selected and #selected > 0 then
+    local files = {}
+    for _, sel_item in ipairs(selected) do
+      local file_path = sel_item.file or sel_item.path or sel_item.filename
+      if file_path then
+        if not file_path:match("^/") then
+          file_path = vim.fn.getcwd() .. "/" .. file_path
+        end
+        if vim.fn.filereadable(file_path) == 1 or vim.fn.isdirectory(file_path) == 1 then
+          table.insert(files, file_path)
+        end
+      end
+    end
+    if #files > 0 then
+      return files, nil
+    end
+  end
+
+  return {}, "No file found in snacks picker"
 end
 
 return M
