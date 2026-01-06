@@ -20,6 +20,14 @@ local function cleanup_state()
   jobid = nil
 end
 
+local function setup_terminal_keymaps(buf)
+  local opts = { buffer = buf, silent = true }
+  vim.keymap.set("t", "<C-h>", "<C-\\><C-n><C-w>h", opts)
+  vim.keymap.set("t", "<C-j>", "<C-\\><C-n><C-w>j", opts)
+  vim.keymap.set("t", "<C-k>", "<C-\\><C-n><C-w>k", opts)
+  vim.keymap.set("t", "<C-l>", "<C-\\><C-n><C-w>l", opts)
+end
+
 local function is_valid()
   -- First check if we have a valid buffer
   if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
@@ -133,6 +141,8 @@ local function open_terminal(cmd_string, env_table, effective_config, focus)
   bufnr = vim.api.nvim_get_current_buf()
   vim.bo[bufnr].bufhidden = "hide"
   -- buftype=terminal is set by termopen
+
+  setup_terminal_keymaps(bufnr)
 
   if focus then
     -- Focus the terminal: switch to terminal window and enter insert mode
