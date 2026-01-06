@@ -55,10 +55,6 @@ local function setup_terminal_keymaps(buf)
   vim.keymap.set("n", "<C-k>", nav_and_insert("k"), opts)
   vim.keymap.set("n", "<C-l>", nav_and_insert("l"), opts)
 
-  -- Scrolling
-  vim.keymap.set("t", "<C-f>", [[<C-\><C-n><C-f>]], opts)
-  vim.keymap.set("t", "<C-b>", [[<C-\><C-n><C-b>]], opts)
-
   -- Auto-insert mode when focusing terminal
   local augroup = vim.api.nvim_create_augroup("ClaudeCodeTerminalFocus_" .. buf, { clear = true })
   vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter", "FocusGained" }, {
