@@ -20,12 +20,68 @@ local function cleanup_state()
   jobid = nil
 end
 
+local function force_insert_mode()
+  vim.schedule(function()
+    local current_buf = vim.api.nvim_get_current_buf()
+    if bufnr and current_buf == bufnr and vim.api.nvim_buf_is_valid(bufnr) then
+      local mode = vim.fn.mode()
+      if mode ~= "i" and mode ~= "t" then
+        vim.cmd("startinsert")
+      end
+    end
+  end)
+end
+
 local function setup_terminal_keymaps(buf)
-  local opts = { buffer = buf, silent = true }
-  vim.keymap.set("t", "<C-h>", "<C-\\><C-n><C-w>h", opts)
-  vim.keymap.set("t", "<C-j>", "<C-\\><C-n><C-w>j", opts)
-  vim.keymap.set("t", "<C-k>", "<C-\\><C-n><C-w>k", opts)
-  vim.keymap.set("t", "<C-l>", "<C-\\><C-n><C-w>l", opts)
+  local opts = { buffer = buf, silent = true, noremap = true }
+
+  -- Window navigation (terminal mode) - after nav, auto-insert if landed on terminal
+  vim.keymap.set("t", "<C-h>", function()
+    vim.cmd([[<C-\><C-n><C-w>h]])
+    force_insert_mode()
+  end, opts)
+  vim.keymap.set("t", "<C-j>", function()
+    vim.cmd([[<C-\><C-n><C-w>j]])
+    force_insert_mode()
+  end, opts)
+  vim.keymap.set("t", "<C-k>", function()
+    vim.cmd([[<C-\><C-n><C-w>k]])
+    force_insert_mode()
+  end, opts)
+  vim.keymap.set("t", "<C-l>", function()
+    vim.cmd([[<C-\><C-n><C-w>l]])
+    force_insert_mode()
+  end, opts)
+
+  -- Window navigation (normal mode)
+  vim.keymap.set("n", "<C-h>", function()
+    vim.cmd([[<C-w>h]])
+    force_insert_mode()
+  end, opts)
+  vim.keymap.set("n", "<C-j>", function()
+    vim.cmd([[<C-w>j]])
+    force_insert_mode()
+  end, opts)
+  vim.keymap.set("n", "<C-k>", function()
+    vim.cmd([[<C-w>k]])
+    force_insert_mode()
+  end, opts)
+  vim.keymap.set("n", "<C-l>", function()
+    vim.cmd([[<C-w>l]])
+    force_insert_mode()
+  end, opts)
+
+  -- Scrolling
+  vim.keymap.set("t", "<C-f>", [[<C-\><C-n><C-f>]], opts)
+  vim.keymap.set("t", "<C-b>", [[<C-\><C-n><C-b>]], opts)
+
+  -- Auto-insert mode when focusing terminal
+  local augroup = vim.api.nvim_create_augroup("ClaudeCodeTerminalFocus_" .. buf, { clear = true })
+  vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter", "FocusGained" }, {
+    group = augroup,
+    buffer = buf,
+    callback = force_insert_mode,
+  })
 end
 
 local function is_valid()
