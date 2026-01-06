@@ -61,19 +61,19 @@ local function open_terminal(cmd_string, env_table, effective_config, focus)
   end
 
   local original_win = vim.api.nvim_get_current_win()
-  local width = math.floor(vim.o.columns * effective_config.split_width_percentage)
-  local full_height = vim.o.lines
-  local placement_modifier
 
-  if effective_config.split_side == "left" then
-    placement_modifier = "topleft "
+  -- Support horizontal split (top/bottom) via split_side
+  if effective_config.split_side == "bottom" or effective_config.split_side == "top" then
+    local height = math.floor(vim.o.lines * effective_config.split_width_percentage)
+    local placement = effective_config.split_side == "top" and "topleft " or "botright "
+    vim.cmd(placement .. height .. "split")
   else
-    placement_modifier = "botright "
+    -- Vertical split (left/right)
+    local width = math.floor(vim.o.columns * effective_config.split_width_percentage)
+    local placement_modifier = effective_config.split_side == "left" and "topleft " or "botright "
+    vim.cmd(placement_modifier .. width .. "vsplit")
   end
-
-  vim.cmd(placement_modifier .. width .. "vsplit")
   local new_winid = vim.api.nvim_get_current_win()
-  vim.api.nvim_win_set_height(new_winid, full_height)
 
   vim.api.nvim_win_call(new_winid, function()
     vim.cmd("enew")
