@@ -35,41 +35,25 @@ end
 local function setup_terminal_keymaps(buf)
   local opts = { buffer = buf, silent = true, noremap = true }
 
-  -- Window navigation (terminal mode) - after nav, auto-insert if landed on terminal
-  vim.keymap.set("t", "<C-h>", function()
-    vim.cmd([[<C-\><C-n><C-w>h]])
-    force_insert_mode()
-  end, opts)
-  vim.keymap.set("t", "<C-j>", function()
-    vim.cmd([[<C-\><C-n><C-w>j]])
-    force_insert_mode()
-  end, opts)
-  vim.keymap.set("t", "<C-k>", function()
-    vim.cmd([[<C-\><C-n><C-w>k]])
-    force_insert_mode()
-  end, opts)
-  vim.keymap.set("t", "<C-l>", function()
-    vim.cmd([[<C-\><C-n><C-w>l]])
-    force_insert_mode()
-  end, opts)
+  local function nav_and_insert(direction)
+    return function()
+      vim.cmd("stopinsert")
+      vim.cmd("wincmd " .. direction)
+      force_insert_mode()
+    end
+  end
+
+  -- Window navigation (terminal mode)
+  vim.keymap.set("t", "<C-h>", nav_and_insert("h"), opts)
+  vim.keymap.set("t", "<C-j>", nav_and_insert("j"), opts)
+  vim.keymap.set("t", "<C-k>", nav_and_insert("k"), opts)
+  vim.keymap.set("t", "<C-l>", nav_and_insert("l"), opts)
 
   -- Window navigation (normal mode)
-  vim.keymap.set("n", "<C-h>", function()
-    vim.cmd([[<C-w>h]])
-    force_insert_mode()
-  end, opts)
-  vim.keymap.set("n", "<C-j>", function()
-    vim.cmd([[<C-w>j]])
-    force_insert_mode()
-  end, opts)
-  vim.keymap.set("n", "<C-k>", function()
-    vim.cmd([[<C-w>k]])
-    force_insert_mode()
-  end, opts)
-  vim.keymap.set("n", "<C-l>", function()
-    vim.cmd([[<C-w>l]])
-    force_insert_mode()
-  end, opts)
+  vim.keymap.set("n", "<C-h>", nav_and_insert("h"), opts)
+  vim.keymap.set("n", "<C-j>", nav_and_insert("j"), opts)
+  vim.keymap.set("n", "<C-k>", nav_and_insert("k"), opts)
+  vim.keymap.set("n", "<C-l>", nav_and_insert("l"), opts)
 
   -- Scrolling
   vim.keymap.set("t", "<C-f>", [[<C-\><C-n><C-f>]], opts)
@@ -281,20 +265,17 @@ local function show_hidden_terminal(effective_config, focus)
 
   local original_win = vim.api.nvim_get_current_win()
 
-  -- Create a new window for the existing buffer
-  local width = math.floor(vim.o.columns * effective_config.split_width_percentage)
-  local full_height = vim.o.lines
-  local placement_modifier
-
-  if effective_config.split_side == "left" then
-    placement_modifier = "topleft "
+  -- Create a new window for the existing buffer (same logic as open_terminal)
+  if effective_config.split_side == "bottom" or effective_config.split_side == "top" then
+    local height = math.floor(vim.o.lines * effective_config.split_width_percentage)
+    local placement = effective_config.split_side == "top" and "topleft " or "botright "
+    vim.cmd(placement .. height .. "split")
   else
-    placement_modifier = "botright "
+    local width = math.floor(vim.o.columns * effective_config.split_width_percentage)
+    local placement = effective_config.split_side == "left" and "topleft " or "botright "
+    vim.cmd(placement .. width .. "vsplit")
   end
-
-  vim.cmd(placement_modifier .. width .. "vsplit")
   local new_winid = vim.api.nvim_get_current_win()
-  vim.api.nvim_win_set_height(new_winid, full_height)
 
   -- Set the existing buffer in the new window
   vim.api.nvim_win_set_buf(new_winid, bufnr)
