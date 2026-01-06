@@ -494,18 +494,30 @@ function M._get_snacks_picker_selection()
     -- Fallback: try to get the current item from the picker list buffer
     local line = vim.api.nvim_get_current_line()
     if line and line ~= "" then
-      -- The picker list often shows file paths - try to extract it
-      -- Look for absolute path pattern
-      local path = line:match("(/[^%s]+)")
-      if path and (vim.fn.filereadable(path) == 1 or vim.fn.isdirectory(path) == 1) then
-        return { path }, nil
-      end
+      -- Snacks picker uses tree-style format: " │ ├╴  filename.ext"
+      -- Strip tree drawing characters and extract filename
+      local filename = line:gsub("[│├└╴╶─┬┼┤┐┘┌┴]", ""):gsub("^%s+", ""):gsub("%s+$", "")
 
-      -- Try relative path from cwd
-      local cwd = vim.fn.getcwd()
-      local full_path = cwd .. "/" .. line:gsub("^%s+", ""):gsub("%s+$", "")
-      if vim.fn.filereadable(full_path) == 1 or vim.fn.isdirectory(full_path) == 1 then
-        return { full_path }, nil
+      if filename and filename ~= "" then
+        -- Look for absolute path pattern first
+        local path = line:match("(/[^%s]+)")
+        if path and (vim.fn.filereadable(path) == 1 or vim.fn.isdirectory(path) == 1) then
+          return { path }, nil
+        end
+
+        -- Try to find the file in cwd recursively
+        local cwd = vim.fn.getcwd()
+        local found = vim.fn.globpath(cwd, "**/" .. filename, false, true)
+        if found and #found > 0 then
+          -- Return first match
+          return { found[1] }, nil
+        end
+
+        -- Try direct path from cwd
+        local full_path = cwd .. "/" .. filename
+        if vim.fn.filereadable(full_path) == 1 or vim.fn.isdirectory(full_path) == 1 then
+          return { full_path }, nil
+        end
       end
     end
     return {}, "Could not get selection from snacks picker"
