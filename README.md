@@ -1,6 +1,6 @@
 # Claude Code Neovim Plugin
 
-Fork of [coder/claudecode.nvim](https://github.com/coder/claudecode.nvim) with diff feature removed.
+Fork of [coder/claudecode.nvim](https://github.com/coder/claudecode.nvim) with features from [greggh/claude-code.nvim](https://github.com/greggh/claude-code.nvim).
 
 ## Changes from upstream
 
@@ -10,6 +10,8 @@ Fork of [coder/claudecode.nvim](https://github.com/coder/claudecode.nvim) with d
 - Added horizontal split support (top/bottom)
 - Added snacks.nvim picker support
 - ClaudeCodeSend now falls back to adding current file when no selection
+- Added terminal keymaps: `<C-h/j/k/l>` for window navigation, `<C-f/b>` for scrolling
+- Auto-insert mode when focusing terminal window
 
 ## Features (from upstream)
 
