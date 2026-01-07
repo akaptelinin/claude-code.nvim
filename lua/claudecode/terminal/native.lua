@@ -109,12 +109,12 @@ local function open_terminal(cmd_string, env_table, effective_config, focus)
   -- Support horizontal split (top/bottom) via split_side
   if effective_config.split_side == "bottom" or effective_config.split_side == "top" then
     local height = math.floor(vim.o.lines * effective_config.split_width_percentage)
-    local placement = effective_config.split_side == "top" and "topleft " or "botright "
+    local placement = effective_config.split_side == "top" and "leftabove " or "rightbelow "
     vim.cmd(placement .. height .. "split")
   else
     -- Vertical split (left/right)
     local width = math.floor(vim.o.columns * effective_config.split_width_percentage)
-    local placement_modifier = effective_config.split_side == "left" and "topleft " or "botright "
+    local placement_modifier = effective_config.split_side == "left" and "leftabove " or "rightbelow "
     vim.cmd(placement_modifier .. width .. "vsplit")
   end
   local new_winid = vim.api.nvim_get_current_win()
@@ -264,11 +264,11 @@ local function show_hidden_terminal(effective_config, focus)
   -- Create a new window for the existing buffer (same logic as open_terminal)
   if effective_config.split_side == "bottom" or effective_config.split_side == "top" then
     local height = math.floor(vim.o.lines * effective_config.split_width_percentage)
-    local placement = effective_config.split_side == "top" and "topleft " or "botright "
+    local placement = effective_config.split_side == "top" and "leftabove " or "rightbelow "
     vim.cmd(placement .. height .. "split")
   else
     local width = math.floor(vim.o.columns * effective_config.split_width_percentage)
-    local placement = effective_config.split_side == "left" and "topleft " or "botright "
+    local placement = effective_config.split_side == "left" and "leftabove " or "rightbelow "
     vim.cmd(placement .. width .. "vsplit")
   end
   local new_winid = vim.api.nvim_get_current_win()
